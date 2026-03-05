@@ -1,20 +1,19 @@
 FROM python:3.11-slim
 
-# Instalace systémových závislostí pro kompilaci mysqlclient
 RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \
+    libmariadb-dev-compat \
     pkg-config \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Kopírování a instalace requirements
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Přidáme upgrade pipu, aby si poradil s novějšími balíčky
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-# Kopírování zbytku kódu
 COPY . .
 
 EXPOSE 8000

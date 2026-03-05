@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  wms_app:
+    build: .
+    container_name: wms_backend
+    ports:
+      - "8002:8000"
+    volumes:
+      - .:/app
+    environment:
+      - DB_NAME=wms_db
+      - DB_USER=kimai_user
+      - DB_PASSWORD=Oid0MOLO95
+      - DB_HOST=172.17.0.1  # IP MariaDB v rámci Docker sítě ZimaOS
+    restart: always

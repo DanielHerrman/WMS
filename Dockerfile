@@ -1,19 +1,20 @@
 FROM python:3.11-slim
 
-# Instalace knihoven pro MySQL/MariaDB
+# Instalace systémových závislostí pro kompilaci mysqlclient
 RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \
     pkg-config \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Instalace Python závislostí
+# Kopírování a instalace requirements
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Zbytek kódu
+# Kopírování zbytku kódu
 COPY . .
 
 EXPOSE 8000

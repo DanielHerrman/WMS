@@ -42,3 +42,4 @@ class ProductionDetails(models.Model):
     color_name = models.CharField(max_length=50, blank=True)
     material_type = models.CharField(max_length=50, blank=True, help_text="PLA, PETG, Bavlna...")
     filament_length_m = models.FloatField(null=True, blank=True, help_text="Délka pro 3D tisk")
+

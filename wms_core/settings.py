@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework',      # API framework
     'corsheaders',         # Pro budoucí mobilní appku
     'core',                # Tvá hlavní logika
+    'print3d',             # 3D Printing Module
 ]
 
 MIDDLEWARE = [
@@ -132,4 +133,31 @@ UNFOLD = {
     "SITE_TITLE": "WMS Admin",
     "SITE_HEADER": "WMS Admin",
     "SITE_SYMBOL": "speed",
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+        "navigation": [
+            {
+                "title": "3D Printing",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Printer Fleet",
+                        "icon": "print",
+                        "link": "/admin/print3d/printer/",
+                    },
+                    {
+                        "title": "Filament Inventory",
+                        "icon": "inventory_2",
+                        "link": "/admin/print3d/filament/",
+                    },
+                    {
+                        "title": "Custom Orders",
+                        "icon": "shopping_cart",
+                        "link": "/admin/print3d/customorder/",
+                    }
+                ]
+            }
+        ]
+    }
 }

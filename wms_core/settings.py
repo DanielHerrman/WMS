@@ -31,6 +31,7 @@ ALLOWED_HOSTS = ['192.168.50.143', 'localhost', '127.0.0.1']
 # Application definition
 
 INSTALLED_APPS = [
+    'unfold',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -122,3 +123,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+STATICFILES_DIRS = [
+    BASE_DIR / 'wms_core' / 'static',
+]
+
+UNFOLD = {
+    "SITE_TITLE": "WMS Admin",
+    "SITE_HEADER": "WMS Admin",
+    "SITE_SYMBOL": "speed",
+}

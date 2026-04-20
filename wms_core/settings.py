@@ -31,7 +31,13 @@ SECRET_KEY = 'django-insecure-2jqa0a^h*-#qnq=bu_=ga^r#5pj69lka_6g7bycg9tpkpxyl#q
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.50.143', 'localhost', '127.0.0.1']
+# Nactitani z prostredi (vyzaduje carkou oddeleny seznam domen, napr. v .env)
+env_allowed_hosts = os.environ.get('ALLOWED_HOSTS', '192.168.50.143,localhost,127.0.0.1')
+ALLOWED_HOSTS = [host.strip() for host in env_allowed_hosts.split(',') if host.strip()]
+
+# CSRF pro Cloudflare Tunnel support
+env_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000')
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in env_csrf.split(',') if origin.strip()]
 
 
 # Application definition

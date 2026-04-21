@@ -14,6 +14,15 @@ class MultiTenantAdminMixin:
             return qs.filter(organization=request.user.profile.organization)
         return qs.none()
 
+    def get_exclude(self, request, obj=None):
+        """Skryje pole 'organization' pro všechny běžné uživatele"""
+        excludes = super().get_exclude(request, obj) or []
+        excludes = list(excludes)
+        if not request.user.is_superuser:
+            if 'organization' not in excludes:
+                excludes.append('organization')
+        return tuple(excludes) if excludes else None
+
     def save_model(self, request, obj, form, change):
         if not request.user.is_superuser and not change:
             if hasattr(request.user, 'profile') and request.user.profile.organization:

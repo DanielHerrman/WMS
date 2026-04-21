@@ -61,3 +61,17 @@ class ProductionDetails(models.Model):
     material_type = models.CharField(max_length=50, blank=True, help_text="PLA, PETG, Bavlna...")
     filament_length_m = models.FloatField(null=True, blank=True, help_text="Délka pro 3D tisk")
 
+
+@receiver(post_save, sender=User)
+def create_user_profile_and_assign_group(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.get_or_create(user=instance)
+        
+        # Automatické přiřazení do skupiny "Základní tarif"
+        from django.contrib.auth.models import Group
+        try:
+            default_group, _ = Group.objects.get_or_create(name='Základní tarif')
+            instance.groups.add(default_group)
+        except Exception:
+            pass # Prestoze by melo fungovat, jistota pro pripadne db kolize pri migraci
+

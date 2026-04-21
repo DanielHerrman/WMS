@@ -6,14 +6,15 @@ from django.urls import path
 from django.shortcuts import get_object_or_404
 import math
 from .models import CustomOrder, Printer, Filament
+from core.admin import MultiTenantAdminMixin
 
 @admin.register(Printer)
-class PrinterAdmin(ModelAdmin):
+class PrinterAdmin(MultiTenantAdminMixin, ModelAdmin):
     list_display = ('name', 'amortization_rate_per_hour')
     search_fields = ('name',)
 
 @admin.register(Filament)
-class FilamentAdmin(ModelAdmin):
+class FilamentAdmin(MultiTenantAdminMixin, ModelAdmin):
     list_display = ('name', 'type', 'kg_price', 'error_margin_multiplier')
     list_filter = ('type',)
     search_fields = ('name',)
@@ -44,7 +45,7 @@ def export_estimation_to_txt(modeladmin, request, queryset):
     return response
 
 @admin.register(CustomOrder)
-class CustomOrderAdmin(ModelAdmin):
+class CustomOrderAdmin(MultiTenantAdminMixin, ModelAdmin):
     list_display = ('project_name', 'printer', 'products_count', 'display_base_cost', 'display_price_100', 'display_price_200', 'display_price_350', 'created_at')
     list_filter = ('printer', 'filament', 'delivery_type')
     search_fields = ('project_name',)

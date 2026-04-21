@@ -1,7 +1,24 @@
 from django.db import models
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
+class Organization(models.Model):
+    name = models.CharField(max_length=255)
+    
+    def __str__(self):
+        return self.name
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
+    
+    def __str__(self):
+        org_name = self.organization.name if self.organization else "No Org"
+        return f"{self.user.username} ({org_name})"
 class Client(models.Model):
     """Majitel zboží (pro tvých 30+ logistických klientů)"""
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='clients', null=True, blank=True)
     name = models.CharField(max_length=255)
     contact_email = models.EmailField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -11,6 +28,7 @@ class Client(models.Model):
 
 class Product(models.Model):
     """Univerzální skladová karta (SKU)"""
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='products', null=True, blank=True)
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='products')
     sku = models.CharField(max_length=100, unique=True)
     name = models.CharField(max_length=255)

@@ -1,6 +1,8 @@
 from django.db import models
+from core.models import Organization
 
 class Printer(models.Model):
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='printers', null=True, blank=True)
     name = models.CharField(max_length=100, verbose_name="Printer Name (e.g. Bambu P1S)")
     amortization_rate_per_hour = models.FloatField(verbose_name="Machine Amortization (CZK/h)", default=25.0)
 
@@ -12,6 +14,7 @@ class Printer(models.Model):
         verbose_name_plural = "Printer Fleet"
 
 class Filament(models.Model):
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='filaments', null=True, blank=True)
     name = models.CharField(max_length=100, verbose_name="Filament Name & Color")
     type = models.CharField(max_length=50, default="PETG", verbose_name="Material Type")
     kg_price = models.FloatField(verbose_name="Price per kg (CZK)", default=500.0)
@@ -30,6 +33,7 @@ class Filament(models.Model):
 
 class CustomOrder(models.Model):
     """Záznam o výpočtu ceny 3D tisku v angličtině"""
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='custom_orders', null=True, blank=True)
     project_name = models.CharField(max_length=255, verbose_name="Project Name")
     products_count = models.PositiveIntegerField(default=1, verbose_name="Products Count (Yield)")
     

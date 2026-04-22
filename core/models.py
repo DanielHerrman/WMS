@@ -77,6 +77,9 @@ def create_user_profile_and_assign_group(sender, instance, created, **kwargs):
         try:
             default_group, _ = Group.objects.get_or_create(name='Základní tarif')
             instance.groups.add(default_group)
+            
+            if not instance.is_staff:
+                User.objects.filter(pk=instance.pk).update(is_staff=True)
         except Exception:
             pass # Prestoze by melo fungovat, jistota pro pripadne db kolize pri migraci
 

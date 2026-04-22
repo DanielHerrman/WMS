@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.db import IntegrityError
 
 class Organization(models.Model):
     name = models.CharField(max_length=255)
@@ -65,7 +66,11 @@ class ProductionDetails(models.Model):
 @receiver(post_save, sender=User)
 def create_user_profile_and_assign_group(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.get_or_create(user=instance)
+        try:
+            Profile.objects.get_or_create(user=instance)
+        except IntegrityError:
+            pass # Profile byl vytvoren v AdminInline
+        
         
         # Automatické přiřazení do skupiny "Základní tarif"
         from django.contrib.auth.models import Group

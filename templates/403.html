@@ -1,18 +1,23 @@
 {% extends "admin/base_site.html" %}
-{% load i18n %}
+{% load i18n static %}
 
-{% block title %}Přístup odepřen | Lejbl Lab{% endblock %}
+{% block title %}Access Denied | Lejbl Lab{% endblock %}
 
 {% block content %}
 <div class="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
-    <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-lg p-8 max-w-md shadow-sm">
-        <span class="material-symbols-outlined text-red-500 text-5xl mb-4 block mx-auto">block</span>
-        <h1 class="text-2xl font-semibold mb-3 text-font-important-light dark:text-font-important-dark">Přístup odepřen</h1>
-        <p class="text-font-default-light dark:text-font-default-dark mb-6 leading-relaxed">
-            Ups! Vypadá to, že pro tuto akci nemáte dostatečné oprávnění. Pokud si myslíte, že byste k této sekci měli mít přístup, kontaktujte prosím správce vaší organizace.
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-8 max-w-md shadow-sm">
+        <span class="material-symbols-outlined text-red-500 text-5xl mb-4 block mx-auto">lock</span>
+        
+        <h1 class="text-2xl font-semibold mb-3 text-gray-900 dark:text-white">
+            Access Denied
+        </h1>
+        
+        <p class="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+            Oops! It looks like you don't have permission to access this section. If you believe this is an error, please contact your organization administrator.
         </p>
-        <a href="/admin/" class="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded transition-colors inline-block">
-            Zpět na Dashboard
+        
+        <a href="{% url 'admin:index' %}" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-5 rounded-md transition-colors shadow-sm">
+            Back to Dashboard
         </a>
     </div>
 </div>

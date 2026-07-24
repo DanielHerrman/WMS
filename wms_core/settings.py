@@ -39,6 +39,9 @@ CSRF_TRUSTED_ORIGINS = os.environ.get(
 # Cloudflare Tunnel posílá HTTPS požadavky, ale komunikuje s backendem přes HTTP
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
+SECURE_SSL_REDIRECT = False
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
 
 LOGGING = {
     'version': 1,

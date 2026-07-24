@@ -1,6 +1,7 @@
 django<6.1
 djangorestframework
 django-cors-headers
+django-filter
 mysqlclient
 python-dotenv
 django-unfold

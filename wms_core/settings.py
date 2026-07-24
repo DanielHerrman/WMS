@@ -31,6 +31,14 @@ ALLOWED_HOSTS = os.environ.get(
     '192.168.50.143,localhost,127.0.0.1'
 ).split(',')
 
+CSRF_TRUSTED_ORIGINS = os.environ.get(
+    'CSRF_TRUSTED_ORIGINS',
+    'http://localhost,http://127.0.0.1'
+).split(',')
+
+# Cloudflare Tunnel posílá HTTPS požadavky, ale komunikuje s backendem přes HTTP
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 # Application definition
 

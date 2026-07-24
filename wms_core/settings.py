@@ -12,32 +12,24 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
-import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Load environment variables from .env file
-load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-2jqa0a^h*-#qnq=bu_=ga^r#5pj69lka_6g7bycg9tpkpxyl#q'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-2jqa0a^h*-#qnq=bu_=ga^r#5pj69lka_6g7bycg9tpkpxyl#q')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_ENV', 'development') == 'development'
 
-# Nactitani z prostredi (vyzaduje carkou oddeleny seznam domen, napr. v .env)
-env_allowed_hosts = os.environ.get('ALLOWED_HOSTS', '192.168.50.143,localhost,127.0.0.1')
-ALLOWED_HOSTS = [host.strip() for host in env_allowed_hosts.split(',') if host.strip()]
-
-# CSRF pro Cloudflare Tunnel support
-env_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000')
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in env_csrf.split(',') if origin.strip()]
+ALLOWED_HOSTS = os.environ.get(
+    'ALLOWED_HOSTS',
+    '192.168.50.143,localhost,127.0.0.1'
+).split(',')
 
 
 # Application definition
@@ -88,13 +80,16 @@ WSGI_APPLICATION = 'wms_core.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+# Databáze se konfiguruje přes environment proměnné:
+#   DB_ENGINE, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+# Pro lokální vývoj: docker-compose.yml (wms_db service)
+# Pro produkci:        docker-compose.prod.yml (externí ZimaOS MariaDB)
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL', f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
+    'default': {
+        'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.sqlite3'),
+        'NAME': os.environ.get('DB_NAME', BASE_DIR / 'db.sqlite3'),
+    }
 }
 
 
@@ -147,13 +142,29 @@ UNFOLD = {
         "show_all_applications": True,
         "navigation": [
             {
+                "title": "Core",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Organizations",
+                        "icon": "corporate_fare",
+                        "link": "/admin/core/organization/",
+                    },
+                ]
+            },
+            {
                 "title": "3D Printing",
                 "separator": True,
                 "items": [
                     {
-                        "title": "Printer Fleet",
-                        "icon": "print",
-                        "link": "/admin/print3d/printer/",
+                        "title": "Material Types",
+                        "icon": "category",
+                        "link": "/admin/print3d/materialtype/",
+                    },
+                    {
+                        "title": "Filament Brands",
+                        "icon": "branding_watermark",
+                        "link": "/admin/print3d/filamentbrand/",
                     },
                     {
                         "title": "Filament Inventory",
@@ -161,10 +172,20 @@ UNFOLD = {
                         "link": "/admin/print3d/filament/",
                     },
                     {
+                        "title": "Printers",
+                        "icon": "print",
+                        "link": "/admin/print3d/printer/",
+                    },
+                    {
                         "title": "Custom Orders",
                         "icon": "shopping_cart",
                         "link": "/admin/print3d/customorder/",
-                    }
+                    },
+                    {
+                        "title": "Usage Logs",
+                        "icon": "receipt_long",
+                        "link": "/admin/print3d/filamentusagelog/",
+                    },
                 ]
             }
         ]

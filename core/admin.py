@@ -1,6 +1,13 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
-from .models import Client, Product, ProductionDetails
+from .models import Organization, Client, Product, ProductionDetails
+
+
+@admin.register(Organization)
+class OrganizationAdmin(ModelAdmin):
+    list_display = ('name', 'address', 'created_at')
+    search_fields = ('name',)
+
 
 @admin.register(Client)
 class ClientAdmin(ModelAdmin):

@@ -19,4 +19,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/v1/print3d/', include('print3d.urls')),
 ]

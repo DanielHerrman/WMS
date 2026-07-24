@@ -90,7 +90,7 @@ git fetch origin
 git reset --hard origin/main
 ```
 
-### 5. Přebuild a restart (POUZE pokud se změnil Dockerfile/requirements.txt)
+### 5. Přebuild a restart (POUZE pokud se změnil Dockerfile/requirements.txt/settings.py)
 ```bash
 # Kopíruj requirements.txt z lokálního repo (pokud se změnil)
 # Pak:
@@ -104,10 +104,10 @@ echo Oid0MOLO95 | sudo -S docker run -d --name wms_backend --network bridge -p 8
   -e CSRF_TRUSTED_ORIGINS='https://app.lejbl-lab.space' \
   -e DJANGO_ENV=production \
   -e SECRET_KEY='django-insecure-2jqa0a_h-_-qnq_bu__ga_r_5pj69lka_6g7bycg9tpkpxyl_q' \
-  -w /app --restart unless-stopped lejbl_src-wms_app \
-  python manage.py runserver 0.0.0.0:8000
+  --restart unless-stopped lejbl_src-wms_app
 echo Oid0MOLO95 | sudo -S docker network connect lejbl_src_default wms_backend
 ```
+> **Poznámka:** Aplikace nyní běží přes **Gunicorn** (production WSGI server) – CMD je definován v Dockerfilu. `collectstatic` se spouští automaticky při buildu image. Pokud přidáš nové statické soubory (CSS/JS), je potřeba rebuildnout image.
 
 ### 6. Rychlý restart (jen kód, beze změny image)
 ```bash

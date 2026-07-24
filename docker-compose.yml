@@ -1,6 +1,24 @@
 version: '3.8'
 
 services:
+  wms_db:
+    image: mysql:8.0
+    container_name: wms_db_local
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: wms_db
+      MYSQL_USER: wms_user
+      MYSQL_PASSWORD: wms_password
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
   wms_app:
     build: .
     container_name: wms_backend
@@ -9,8 +27,17 @@ services:
     volumes:
       - .:/app
     environment:
+      - DB_ENGINE=django.db.backends.mysql
       - DB_NAME=wms_db
-      - DB_USER=kimai_user
-      - DB_PASSWORD=Oid0MOLO95
-      - DB_HOST=172.17.0.1  # IP MariaDB v rámci Docker sítě ZimaOS
-    restart: always
+      - DB_USER=wms_user
+      - DB_PASSWORD=wms_password
+      - DB_HOST=wms_db
+      - DB_PORT=3306
+      - DJANGO_ENV=development
+    depends_on:
+      wms_db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

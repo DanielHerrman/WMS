@@ -4,3 +4,7 @@ db.sqlite3
 .env
 venv/
 .venv
+# Lokální override docker-compose (obsahuje lokální DB hesla)
+docker-compose.override.yml
+# MySQL data volume
+mysql_data/

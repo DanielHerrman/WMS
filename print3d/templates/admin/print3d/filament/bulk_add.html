@@ -1,0 +1,55 @@
+{% extends "unfold/layouts/base.html" %}
+{% load i18n unfold %}
+
+{% block content %}
+<div class="lg:col-span-12">
+    <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div class="border-b border-gray-200 px-6 py-4">
+            <h2 class="text-lg font-semibold text-gray-900">{% trans "Bulk Add Filament Spools" %}</h2>
+            <p class="text-sm text-gray-500 mt-1">{% trans "Create multiple spools at once for a single brand. All spools will be created with status 'Ordered'." %}</p>
+        </div>
+
+        <form method="post" class="px-6 py-4">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="organization" class="block text-sm font-medium text-gray-700 mb-1">{% trans "Organization" %}</label>
+                <select name="organization" id="organization" required class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
+                    <option value="">---------</option>
+                    {% for org in organizations %}
+                    <option value="{{ org.id }}">{{ org.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="brand" class="block text-sm font-medium text-gray-700 mb-1">{% trans "Brand" %}</label>
+                <select name="brand" id="brand" required class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
+                    <option value="">---------</option>
+                    {% for brand in brands %}
+                    <option value="{{ brand.id }}">{{ brand.name }} — {{ brand.material_type }} ({{ brand.spool_size_kg }} kg)</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="count" class="block text-sm font-medium text-gray-700 mb-1">{% trans "Number of Spools" %}</label>
+                <input type="number" name="count" id="count" min="1" max="100" value="1" required class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2">
+            </div>
+            <div class="mb-4">
+                <label for="initial_net_weight_g" class="block text-sm font-medium text-gray-700 mb-1">{% trans "Initial Net Weight (g)" %} <span class="text-gray-400">({% trans "optional" %})</span></label>
+                <input type="number" name="initial_net_weight_g" id="initial_net_weight_g" step="0.01" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2" placeholder="e.g. 1000">
+            </div>
+            <div class="mb-4">
+                <label for="price_per_kg_override" class="block text-sm font-medium text-gray-700 mb-1">{% trans "Price per kg Override (CZK)" %} <span class="text-gray-400">({% trans "optional" %})</span></label>
+                <input type="number" name="price_per_kg_override" id="price_per_kg_override" step="0.01" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border px-3 py-2" placeholder="Uses brand price if blank">
+            </div>
+            <div class="flex items-center gap-3 pt-4 border-t border-gray-200">
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    {% trans "Create Spools" %}
+                </button>
+                <a href="{% url 'admin:print3d_filament_changelist' %}" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-sm font-semibold rounded-md border border-gray-300 shadow-sm hover:bg-gray-50">
+                    {% trans "Cancel" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

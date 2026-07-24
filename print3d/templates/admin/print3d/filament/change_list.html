@@ -1,0 +1,25 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+<li>
+    <a href="javascript:void(0)" onclick="openBulkAddModal()" class="addlink">
+        Bulk Add Spools
+    </a>
+</li>
+{{ block.super }}
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+function openBulkAddModal() {
+    fetch('bulk-add-modal/')
+        .then(r => r.text())
+        .then(html => {
+            const div = document.createElement('div');
+            div.innerHTML = html;
+            document.body.appendChild(div.firstElementChild);
+        });
+}
+</script>
+{% endblock %}

@@ -170,7 +170,7 @@ STATICFILES_DIRS = [
 
 STORAGES = {
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.StaticFilesStorage",
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 

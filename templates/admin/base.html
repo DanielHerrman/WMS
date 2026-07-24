@@ -1,0 +1,14 @@
+﻿{% extends 'unfold/base.html' %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+    document.addEventListener('alpine:init', () => {
+        document.querySelectorAll('[x-show="openModal"]').forEach(el => {
+            if (!el.closest('[x-data]')) {
+                el.setAttribute('x-data', '{ openModal: false }');
+            }
+        });
+    });
+</script>
+{% endblock %}

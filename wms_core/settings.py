@@ -191,6 +191,21 @@ UNFOLD = {
                         "icon": "corporate_fare",
                         "link": "/admin/core/organization/",
                     },
+                    {
+                        "title": "Clients",
+                        "icon": "group",
+                        "link": "/admin/core/client/",
+                    },
+                    {
+                        "title": "Products",
+                        "icon": "inventory_2",
+                        "link": "/admin/core/product/",
+                    },
+                    {
+                        "title": "Production Details",
+                        "icon": "build",
+                        "link": "/admin/core/productiondetails/",
+                    },
                 ]
             },
             {

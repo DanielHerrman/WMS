@@ -57,3 +57,6 @@ class ProductionDetails(models.Model):
     material_type = models.CharField(max_length=50, blank=True, help_text="PLA, PETG, Bavlna...")
     filament_length_m = models.FloatField(null=True, blank=True, help_text="Délka pro 3D tisk")
 
+    class Meta:
+        verbose_name_plural = "Production details"
+

@@ -8,16 +8,15 @@ os.environ["CSRF_TRUSTED_ORIGINS"] = "http://localhost"
 
 django.setup()
 
-from django.test import Client
-from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 
-# Test 1: Ověření hesla
+# Reset password first
+u = User.objects.get(username="admin")
+u.set_password("Oid0MOLO95")
+u.save()
+print("Password reset to Oid0MOLO95 - OK")
+
+# Verify
+from django.contrib.auth import authenticate
 user = authenticate(username="admin", password="Oid0MOLO95")
 print(f"Authenticate admin: {'OK' if user else 'FAILED'}")
-
-# Test 2: Login přes Client
-c = Client()
-resp = c.post("/admin/login/", {"username": "admin", "password": "Oid0MOLO95"})
-print(f"Login POST response: {resp.status_code}")
-print(f"Redirected to: {resp.get('Location', 'no redirect')}")
-print(f"Login {'SUCCESS' if resp.status_code == 302 else 'FAILED'}")

@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -103,7 +104,8 @@ class ProductionDetails(models.Model):
     filament_weight_g = models.DecimalField(
         max_digits=10, decimal_places=2,
         null=True, blank=True,
-        help_text="Hmotnost filamentu v gramech"
+        validators=[MinValueValidator(0)],
+        help_text="Hmotnost filamentu v gramech (min. 0 g)"
     )
 
     def __str__(self):

@@ -39,11 +39,14 @@ def ecommerce_webhook(request, store_slug: str):
             # For WooCommerce: verify header == base64(hmac_sha256(webhook_secret, body))
             pass
 
-    # Parse JSON payload
+    # Parse JSON payload — empty body = delivery ping
+    if not request.body:
+        return JsonResponse({'status': 'ok', 'note': 'webhook delivery acknowledged'})
+
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        return JsonResponse({'status': 'ok', 'note': 'webhook delivery acknowledged (non-JSON body)'}, status=200)
 
     # Import the order
     try:

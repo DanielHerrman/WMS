@@ -448,11 +448,14 @@ class WebhookEndpointTests(TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
-    def test_webhook_invalid_json_returns_400(self):
+    def test_webhook_invalid_json_returns_200(self):
+        """Delivery ping with non-JSON body should be acknowledged."""
         c = TestClient()
         response = c.post(
             '/webhook/test-shop/',
             data='not json',
             content_type='application/json',
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['status'], 'ok')

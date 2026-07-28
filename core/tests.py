@@ -419,10 +419,14 @@ class WebhookEndpointTests(TestCase):
         self.assertEqual(order.store, self.store)
         self.assertTrue(ProductionOrder.objects.filter(ecommerce_order=order).exists())
 
-    def test_webhook_get_returns_405(self):
+    def test_webhook_get_returns_200(self):
+        """GET is a health-check for WooCommerce delivery verification."""
         c = TestClient()
         response = c.get('/webhook/test-shop/')
-        self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['status'], 'ok')
+        self.assertEqual(data['store'], 'test-shop')
 
     def test_webhook_invalid_slug_returns_404(self):
         c = TestClient()

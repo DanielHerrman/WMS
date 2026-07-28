@@ -114,16 +114,18 @@ WSGI_APPLICATION = 'wms_core.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-# Databáze se konfiguruje přes environment proměnné:
-#   DB_ENGINE, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
-# Pro lokální vývoj: docker-compose.yml (wms_db service)
-# Pro produkci:        docker-compose.prod.yml (externí ZimaOS MariaDB)
+# Používá dj-database-url pro snadnou konfiguraci přes DATABASE_URL env proměnnou.
+# Pro lokální vývoj (bez DATABASE_URL): fallback na SQLite.
+# Pro produkci: DATABASE_URL=postgres://user:pass@host:port/dbname
+
+import dj_database_url
 
 DATABASES = {
-    'default': {
-        'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.sqlite3'),
-        'NAME': os.environ.get('DB_NAME', BASE_DIR / 'db.sqlite3'),
-    }
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 

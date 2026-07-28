@@ -186,3 +186,51 @@ Při změně modelů:
 2. Commit + push migrační soubory
 3. Na serveru: `git pull` + `docker exec wms_backend python manage.py migrate`
 4. Pokud migrace selžou → viz "Migrační konflikty" výše (DROP + CREATE DB)
+
+---
+
+## ⚠️ Deploy checklist – prevence opakovaných chyb
+
+### Databáze
+
+- [ ] **Nikdy nemaž migrační soubory**, které už byly aplikovány na produkci
+  - Smazané migrace `core/0002`–`0007` způsobily rozpad DB schématu (2026-07-28)
+  - Pokud migrace přestanou být potřeba, zfakuj je (`migrate --fake`) a nech soubory v repozitáři
+- [ ] **Před deployem ověř:** `git diff --stat origin/main` — kontroluj, že se nemažou migrace
+- [ ] **Po deployi vždy ověř add formuláře** (ty používají `OrganizationAdminMixin` a odhalí chybějící tabulky):
+  ```bash
+  curl -s -o /dev/null -w '%{http_code}' http://localhost:8002/admin/core/client/add/
+  curl -s -o /dev/null -w '%{http_code}' http://localhost:8002/admin/core/product/add/
+  curl -s -o /dev/null -w '%{http_code}' http://localhost:8002/admin/core/productiondetails/add/
+  ```
+  Všechny musí vrátit **302** (login redirect), ne 500.
+- [ ] **Při přidání nového uživatele** (`createsuperuser`) ověř, že má záznam v `core_userprofile`:
+  ```sql
+  SELECT u.username, p.id FROM auth_user u LEFT JOIN core_userprofile p ON u.id = p.user_id;
+  ```
+- [ ] **Ověř FK constrainty** po deployi migrací:
+  ```sql
+  SELECT table_name, column_name FROM information_schema.columns 
+  WHERE table_schema='public' AND table_name LIKE 'core_%' AND column_name = 'organization_id';
+  ```
+  Každá tabulka s `organization_id` MUSÍ mít FK constraint.
+
+### Nastavení
+
+- [ ] `settings.py` v repozitáři musí používat `dj-database-url` pro parsování `DATABASE_URL` env proměnné
+  - **Chyba 2026-07-28:** `git reset --hard` přepsal ručně upravené `settings.py` → server začal používat SQLite
+- [ ] `DJANGO_ENV` v `.env` na serveru nastavit na `production` (ne `development`)
+
+### Incidenty (historie)
+
+| Datum | Problém | Příčina | Oprava |
+|-------|---------|---------|--------|
+| 2026-07-28 | 500 na `/admin/core/client/` a `product/` list views | `settings.py` měl SQLite fallback, ne PostgreSQL | Přidán `dj-database-url` do `settings.py` |
+| 2026-07-28 | 500 na add formulářích Client/Product | Chyběla tabulka `core_userprofile` + `organization_id` FK constrainty | Ruční SQL: `CREATE TABLE core_userprofile`, `ADD CONSTRAINT` |
+| 2026-07-28 | `django.db.utils.OperationalError: no such column: core_client.organization_id` | Smazané migrace `core/0002`–`0007` — sloupce `organization_id` nebyly aplikovány | Ruční SQL: `ALTER TABLE ... ADD COLUMN organization_id` |
+
+### Co NEopakovat
+
+- ❌ `git reset --hard origin/main` bez kontroly, že repozitář odpovídá produkčnímu stavu DB
+- ❌ Mazání migrací z repozitáře, které už běžely na produkci
+- ❌ Manuální SQL opravy na produkci bez synchronizace s Django migracemi — vždy pak spustit `migrate --fake`

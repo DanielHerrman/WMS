@@ -176,6 +176,11 @@ STORAGES = {
     },
 }
 
+# WooCommerce integration credentials (global fallback — prefer EcommerceStore model)
+WOOCOMMERCE_URL = os.environ.get('WOOCOMMERCE_URL', '')
+WOOCOMMERCE_CONSUMER_KEY = os.environ.get('WOOCOMMERCE_CONSUMER_KEY', '')
+WOOCOMMERCE_CONSUMER_SECRET = os.environ.get('WOOCOMMERCE_CONSUMER_SECRET', '')
+
 UNFOLD = {
     "SITE_TITLE": "WMS Admin",
     "SITE_HEADER": "WMS Admin",
@@ -207,6 +212,43 @@ UNFOLD = {
                         "title": "Production Details",
                         "icon": "build",
                         "link": "/admin/core/productiondetails/",
+                    },
+                ]
+            },
+            {
+                "title": "E-commerce",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "E-commerce Stores",
+                        "icon": "store",
+                        "link": "/admin/core/ecommercestore/",
+                    },
+                    {
+                        "title": "E-commerce Orders",
+                        "icon": "shopping_bag",
+                        "link": "/admin/core/ecommerceorder/",
+                    },
+                ]
+            },
+            {
+                "title": "Production",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Step Templates",
+                        "icon": "checklist",
+                        "link": "/admin/core/productionsteptemplate/",
+                    },
+                    {
+                        "title": "Production Orders",
+                        "icon": "engineering",
+                        "link": "/admin/core/productionorder/",
+                    },
+                    {
+                        "title": "Production Steps",
+                        "icon": "playlist_add_check",
+                        "link": "/admin/core/productionstep/",
                     },
                 ]
             },

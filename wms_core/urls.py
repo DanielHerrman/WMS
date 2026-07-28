@@ -16,8 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from core.views import ecommerce_webhook
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/print3d/', include('print3d.urls')),
+    path('webhook/<slug:store_slug>/', ecommerce_webhook, name='ecommerce-webhook'),
 ]

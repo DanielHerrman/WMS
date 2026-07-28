@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class Organization(models.Model):
@@ -13,9 +14,37 @@ class Organization(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        verbose_name = "Organization"
+        verbose_name_plural = "Organizations"
+
+
+class UserProfile(models.Model):
+    """Extends Django User with organization membership for multi-tenant isolation."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='users',
+        verbose_name="Organization"
+    )
+
+    def __str__(self):
+        return f"{self.user.username} → {self.organization.name}"
+
+    class Meta:
+        verbose_name = "User Profile"
+        verbose_name_plural = "User Profiles"
+
 
 class Client(models.Model):
     """Majitel zboží (pro tvých 30+ logistických klientů)"""
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='clients',
+        verbose_name="Organization"
+    )
     name = models.CharField(max_length=255)
     contact_email = models.EmailField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -23,8 +52,19 @@ class Client(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        verbose_name = "Client"
+        verbose_name_plural = "Clients"
+
+
 class Product(models.Model):
     """Univerzální skladová karta (SKU)"""
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='products',
+        verbose_name="Organization"
+    )
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='products')
     sku = models.CharField(max_length=100, unique=True)
     name = models.CharField(max_length=255)
@@ -50,12 +90,26 @@ class Product(models.Model):
     def __str__(self):
         return f"[{self.sku}] {self.name}"
 
+    class Meta:
+        verbose_name = "Product"
+        verbose_name_plural = "Products"
+
+
 class ProductionDetails(models.Model):
     """Specifická data pro 3D tisk a Textil (80% focus)"""
     product = models.OneToOneField(Product, on_delete=models.CASCADE, related_name='production')
     color_name = models.CharField(max_length=50, blank=True)
     material_type = models.CharField(max_length=50, blank=True, help_text="PLA, PETG, Bavlna...")
-    filament_length_m = models.FloatField(null=True, blank=True, help_text="Délka pro 3D tisk")
+    filament_weight_g = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        null=True, blank=True,
+        help_text="Hmotnost filamentu v gramech"
+    )
+
+    def __str__(self):
+        if self.product_id:
+            return f"{self.product.name} — {self.material_type or 'No material'}"
+        return f"ProductionDetails #{self.pk}"
 
     class Meta:
         verbose_name_plural = "Production details"

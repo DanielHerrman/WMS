@@ -19,11 +19,15 @@ def ecommerce_webhook(request, store_slug: str):
     The EcommerceStore is identified by its slug.
     Optional HMAC verification can be enabled if webhook_secret is set.
     """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-
     # Find the store by slug
     store = get_object_or_404(EcommerceStore, slug=store_slug, is_active=True)
+
+    # WooCommerce/Shopify delivery verification uses GET health-check
+    if request.method == 'GET':
+        return JsonResponse({'status': 'ok', 'store': store.slug})
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     # Optional HMAC verification
     if store.webhook_secret:

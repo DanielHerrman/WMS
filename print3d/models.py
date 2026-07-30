@@ -560,44 +560,62 @@ class CustomOrder(models.Model):
         - Deduct filament weight via FilamentUsageLog
         - Set filament status to 'in_use'
         - Set filament sku_position to printer name
+
+        Resilient: never fails on missing filament/brand data — uses defaults or skips.
         """
-        if self.filament and self.filament_weight_g > 0:
-            filament = self.filament
+        if not self.filament or not self.filament_weight_g or self.filament_weight_g <= 0:
+            return
 
-            # Auto-fill weight from brand if missing (backward compat)
-            if filament.current_net_weight_g is None and filament.brand_id:
-                if filament.brand.spool_weight_g is not None:
-                    spool_kg = float(filament.spool_size_kg or filament.brand.spool_size_kg)
-                    spool_w = float(filament.brand.spool_weight_g)
-                    estimated = max(0, spool_kg * 1000 - spool_w)
-                    filament.initial_net_weight_g = estimated
-                    filament.current_net_weight_g = estimated
-                    filament.save(update_fields=['initial_net_weight_g', 'current_net_weight_g'])
+        filament = self.filament
+        weight_used = float(self.filament_weight_g)
 
+        # ── 1. Create the usage log (always, regardless of weight tracking) ──
+        try:
             FilamentUsageLog.objects.create(
                 filament=filament,
                 custom_order=self,
-                grams_used=self.filament_weight_g,
-                notes=f"Auto-logged from printing order #{self.id}: {self.project_name}"
+                grams_used=weight_used,
+                notes=f"Auto-logged from printing order #{self.id}: {self.project_name}",
             )
+        except Exception:
+            logger.exception("FilamentUsageLog create failed — continuing")
 
-            # Deduct from current net weight
-            if filament.current_net_weight_g is not None:
-                filament.current_net_weight_g = max(
-                    0,
-                    float(filament.current_net_weight_g) - self.filament_weight_g
-                )
-                filament.status = 'in_use'
-                # Auto-transition to consumed if weight reaches 0
-                if float(filament.current_net_weight_g) <= 0:
-                    filament.status = 'consumed'
+        # ── 2. Try to deduct from current net weight (optional, best-effort) ──
+        try:
+            # Auto-fill weight from brand if missing
+            if filament.current_net_weight_g is None:
+                if filament.brand_id:
+                    spool_kg = float(
+                        filament.spool_size_kg
+                        or getattr(filament.brand, 'spool_size_kg', None)
+                        or 0
+                    )
+                    spool_w = float(
+                        getattr(filament.brand, 'spool_weight_g', None) or 0
+                    )
+                    estimated = max(0, spool_kg * 1000 - spool_w)
+                    filament.initial_net_weight_g = estimated
+                    filament.current_net_weight_g = estimated
+                else:
                     filament.current_net_weight_g = 0
+
+            # Deduct
+            filament.current_net_weight_g = max(
+                0,
+                float(filament.current_net_weight_g) - weight_used,
+            )
+            filament.status = 'in_use'
+            if float(filament.current_net_weight_g) <= 0:
+                filament.status = 'consumed'
+                filament.current_net_weight_g = 0
 
             # Set sku_position to printer name
             if self.printer:
                 filament.sku_position = self.printer.name
 
             filament.save(update_fields=['current_net_weight_g', 'status', 'sku_position'])
+        except Exception:
+            logger.exception("Filament weight deduction failed — log was created")
 
     def __str__(self):
         import math

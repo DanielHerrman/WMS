@@ -228,9 +228,15 @@ Při změně modelů:
 | 2026-07-28 | 500 na `/admin/core/client/` a `product/` list views | `settings.py` měl SQLite fallback, ne PostgreSQL | Přidán `dj-database-url` do `settings.py` |
 | 2026-07-28 | 500 na add formulářích Client/Product | Chyběla tabulka `core_userprofile` + `organization_id` FK constrainty | Ruční SQL: `CREATE TABLE core_userprofile`, `ADD CONSTRAINT` |
 | 2026-07-28 | `django.db.utils.OperationalError: no such column: core_client.organization_id` | Smazané migrace `core/0002`–`0007` — sloupce `organization_id` nebyly aplikovány | Ruční SQL: `ALTER TABLE ... ADD COLUMN organization_id` |
+| 2026-07-30 | 404 na `/admin/print3d/b2b-orders/` | Django admin URL prefix se generuje z názvu Python třídy (`customorder`), ne z `verbose_name`. Custom `get_urls()` přidává cesty **pod** modelový prefix, ne na root admin URL. | Vrácen sidebar link na `/admin/print3d/customorder/`. **Pravidlo:** URL = z názvu třídy, label = z verbose_name. Nikdy neměň URL přes `get_urls()`. |
+| 2026-07-30 | 500 na Material Types, Filament Brands, Filament Inventory, B2B Orders, Usage Logs, Step Templates | `print3d/0001_initial` na produkční DB neobsahovala `organization_id` sloupce ve 4 tabulkách (`printer`, `materialtype`, `filamentbrand`, `customorder`) — pravděpodobně spuštěno ze starší verze modelů bez `Organization` FK | Manuální migrace `0005_add_printer_organization_id` a `0006_add_organization_to_missing_models` |
+| 2026-07-30 | Konflikt migrací: `CommandError: Conflicting migrations detected` | Lokální migrace `0002` kolidovala s existující produkční `0003` (jiná větev) | `python manage.py makemigrations --merge --noinput` přímo na serveru |
 
 ### Co NEopakovat
 
 - ❌ `git reset --hard origin/main` bez kontroly, že repozitář odpovídá produkčnímu stavu DB
 - ❌ Mazání migrací z repozitáře, které už běžely na produkci
 - ❌ Manuální SQL opravy na produkci bez synchronizace s Django migracemi — vždy pak spustit `migrate --fake`
+- ❌ Generování migrací lokálně bez znalosti produkčních migračních souborů — vždy nejdřív stáhni aktuální stav migrací z produkce
+- ❌ Přidávání nového required pole do modelu bez ověření, že `0001_initial` na produkci ho obsahuje — pokud ne, musíš vygenerovat `AddField` migraci s `null=True`
+- ❌ Pokusy o změnu admin URL přes `get_urls()` — Django URL prefix je vždy z názvu Python třídy

@@ -30,7 +30,7 @@ def reverse_fix(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('print3d', '0006_add_organization_to_missing_models'),
+        ('print3d', '0001_initial'),
         ('core', '0001_initial'),
     ]
 

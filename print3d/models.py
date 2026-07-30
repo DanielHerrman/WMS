@@ -544,6 +544,17 @@ class CustomOrder(models.Model):
 
         super().save(*args, **kwargs)
 
+        # Auto-create ProductionOrder when status transitions to 'confirmed'
+        if old_status != 'confirmed' and self.status == 'confirmed':
+            try:
+                self._on_confirmed()
+            except Exception as e:
+                logger.error(
+                    f"Failed to create ProductionOrder for order #{self.pk} "
+                    f"({self.project_name}): {e}",
+                    exc_info=True,
+                )
+
         # Auto-create FilamentUsageLog + update filament when status transitions to 'printing'
         if old_status != 'printing' and self.status == 'printing':
             try:
@@ -554,6 +565,58 @@ class CustomOrder(models.Model):
                     f"({self.project_name}): {e}",
                     exc_info=True,
                 )
+
+    def _on_confirmed(self):
+        """
+        Handle status transition to 'confirmed':
+        - Create a ProductionOrder linked to this B2B order
+        - Clone steps from universal ProductionStepTemplate (product=None, material_type=None)
+
+        Idempotent: if a ProductionOrder already exists for this CustomOrder, skip.
+        """
+        from core.models import ProductionOrder, Product, ProductionStepTemplate, ProductionStep
+
+        # Idempotent check: skip if a ProductionOrder already linked to this B2B order
+        if ProductionOrder.objects.filter(custom_order=self).exists():
+            return
+
+        # Find or create the shared B2B-CUSTOM product
+        b2b_product, _ = Product.objects.get_or_create(
+            sku='B2B-CUSTOM',
+            defaults={
+                'name': 'B2B Custom Manufacturing',
+                'organization': self.organization,
+                'client_id': 1,  # fallback — real client should be set later
+                'is_purchased': False,
+            }
+        )
+
+        # Create the ProductionOrder
+        po = ProductionOrder.objects.create(
+            organization=self.organization,
+            product=b2b_product,
+            quantity=self.products_count,
+            status='queued',
+            custom_order=self,
+            assigned_printer=self.printer,
+        )
+
+        # Clone universal step templates (product=None, material_type=None)
+        templates = ProductionStepTemplate.objects.filter(
+            organization=self.organization,
+            product__isnull=True,
+            material_type__isnull=True,
+        )
+
+        for template in templates:
+            ProductionStep.objects.create(
+                production_order=po,
+                step_number=template.step_number,
+                name=template.name,
+                description=template.description,
+                media_url=template.media_url,
+                is_required=template.is_required,
+            )
 
     def _on_printing(self):
         """Handle status transition to 'printing':

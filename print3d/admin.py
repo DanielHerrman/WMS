@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from unfold.admin import ModelAdmin
 import math
 
+from core.admin import OrganizationAdminMixin
 from .models import (
     Printer, MaterialType, FilamentBrand, Filament, CustomOrder, FilamentUsageLog
 )
@@ -16,8 +17,9 @@ from .models import (
 # ============================================================
 
 @admin.register(Printer)
-class PrinterAdmin(ModelAdmin):
-    list_display = ('name', 'amortization_rate_per_hour')
+class PrinterAdmin(OrganizationAdminMixin, ModelAdmin):
+    list_display = ('name', 'organization', 'amortization_rate_per_hour')
+    list_filter = ('organization',)
     search_fields = ('name',)
 
 
@@ -26,11 +28,15 @@ class PrinterAdmin(ModelAdmin):
 # ============================================================
 
 @admin.register(MaterialType)
-class MaterialTypeAdmin(ModelAdmin):
-    list_display = ('name', 'default_error_margin', 'default_drying_interval_days')
+class MaterialTypeAdmin(OrganizationAdminMixin, ModelAdmin):
+    list_display = ('name', 'organization', 'default_error_margin', 'default_drying_interval_days')
+    list_filter = ('organization',)
     search_fields = ('name', 'description')
     fieldsets = (
         (None, {
+            'fields': ('organization',)
+        }),
+        ('Material Info', {
             'fields': ('name', 'description')
         }),
         ('Defaults', {
@@ -48,12 +54,15 @@ class MaterialTypeAdmin(ModelAdmin):
 # ============================================================
 
 @admin.register(FilamentBrand)
-class FilamentBrandAdmin(ModelAdmin):
-    list_display = ('name', 'material_type', 'spool_size_kg', 'price_per_kg', 'color_hex_display', 'is_active')
-    list_filter = ('material_type', 'is_active', 'spool_size_kg')
+class FilamentBrandAdmin(OrganizationAdminMixin, ModelAdmin):
+    list_display = ('name', 'organization', 'material_type', 'spool_size_kg', 'price_per_kg', 'color_hex_display', 'is_active')
+    list_filter = ('organization', 'material_type', 'is_active', 'spool_size_kg')
     search_fields = ('name', 'ean')
     fieldsets = (
         (None, {
+            'fields': ('organization',)
+        }),
+        ('Brand Info', {
             'fields': ('name', 'material_type', 'spool_size_kg', 'ean', 'photo')
         }),
         ('Pricing & Color', {
@@ -353,13 +362,13 @@ def export_estimation_to_txt(modeladmin, request, queryset):
 
 
 @admin.register(CustomOrder)
-class CustomOrderAdmin(ModelAdmin):
+class CustomOrderAdmin(OrganizationAdminMixin, ModelAdmin):
     list_display = (
-        'project_name', 'status', 'printer', 'products_count',
+        'project_name', 'organization', 'status', 'printer', 'products_count',
         'display_base_cost', 'display_price_100', 'display_price_200',
         'display_price_350', 'created_at'
     )
-    list_filter = ('status', 'printer', 'filament', 'delivery_type')
+    list_filter = ('organization', 'status', 'printer', 'filament', 'delivery_type')
     search_fields = ('project_name',)
     actions = [export_estimation_to_txt]
 
@@ -472,6 +481,9 @@ class CustomOrderAdmin(ModelAdmin):
     fieldsets = (
         (None, {
             "fields": ("financial_summary_cards",)
+        }),
+        ("Organization", {
+            "fields": ("organization",)
         }),
         ("Basic Info", {
             "fields": ("project_name", "products_count", "printer", "status")

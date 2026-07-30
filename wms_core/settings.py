@@ -277,8 +277,8 @@ UNFOLD = {
                         "link": "/admin/print3d/printer/",
                     },
                     {
-                        "title": "Custom Orders",
-                        "icon": "shopping_cart",
+                        "title": "B2B Orders",
+                        "icon": "business",
                         "link": "/admin/print3d/customorder/",
                     },
                     {

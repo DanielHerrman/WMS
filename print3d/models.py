@@ -8,6 +8,12 @@ from core.models import Organization
 
 class Printer(models.Model):
     """3D printer model."""
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='printers',
+        verbose_name="Organization"
+    )
     name = models.CharField(
         max_length=100,
         verbose_name="Printer Name (e.g. Bambu P1S)"
@@ -27,7 +33,13 @@ class Printer(models.Model):
 
 class MaterialType(models.Model):
     """Material type definition with recommended settings."""
-    name = models.CharField(max_length=50, unique=True, verbose_name="Material Name")
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='material_types',
+        verbose_name="Organization"
+    )
+    name = models.CharField(max_length=50, verbose_name="Material Name")
     description = models.TextField(blank=True, verbose_name="Description")
     recommended_settings = models.JSONField(
         default=dict,
@@ -67,6 +79,12 @@ class FilamentBrand(models.Model):
         (5.0, '5.0 kg'),
     ]
 
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='filament_brands',
+        verbose_name="Organization"
+    )
     name = models.CharField(max_length=100, verbose_name="Brand Name")
     material_type = models.ForeignKey(
         MaterialType,
@@ -366,7 +384,7 @@ class CustomOrder(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('confirmed', 'Confirmed'),
-        ('printing', 'Printing'),
+        ('printing', 'In Production'),
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     ]
@@ -376,6 +394,12 @@ class CustomOrder(models.Model):
         ('shipping', 'Shipping/Courier'),
     ]
 
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='custom_orders',
+        verbose_name="Organization"
+    )
     project_name = models.CharField(max_length=255, verbose_name="Project Name")
     products_count = models.PositiveIntegerField(default=1, verbose_name="Products Count (Yield)")
     status = models.CharField(
@@ -570,8 +594,8 @@ class CustomOrder(models.Model):
         return f"{self.project_name} (Cost: {math.ceil(self.calculated_base_cost)} CZK)"
 
     class Meta:
-        verbose_name = "Custom Order"
-        verbose_name_plural = "Custom Orders"
+        verbose_name = "B2B order"
+        verbose_name_plural = "B2B orders"
 
 
 class FilamentUsageLog(models.Model):

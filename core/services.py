@@ -235,6 +235,10 @@ def complete_step(step_id: int, user: User) -> ProductionStep:
     """
     Mark a ProductionStep as completed.
 
+    If the step is the "3D tisk" step (name contains "3D" or step_number=2)
+    and the parent ProductionOrder has an assigned filament linked to a B2B
+    CustomOrder, a FilamentUsageLog is automatically created.
+
     Args:
         step_id: ProductionStep PK
         user: User completing the step
@@ -245,11 +249,53 @@ def complete_step(step_id: int, user: User) -> ProductionStep:
     Raises:
         ProductionStep.DoesNotExist
     """
-    step = ProductionStep.objects.get(pk=step_id)
+    from print3d.models import FilamentUsageLog
+
+    step = ProductionStep.objects.select_related(
+        'production_order__custom_order'
+    ).get(pk=step_id)
+
+    if step.is_completed:
+        return step
+
     step.is_completed = True
     step.completed_by = user
     step.completed_at = timezone.now()
     step.save(update_fields=['is_completed', 'completed_by', 'completed_at'])
+
+    # ── Auto-deduct filament if this is the "3D tisk" step ──
+    is_print_step = (
+        '3D' in step.name.upper() or step.step_number == 2
+    )
+
+    if is_print_step:
+        try:
+            po = step.production_order
+            b2b = po.custom_order
+            if (
+                po.assigned_filament
+                and b2b
+                and b2b.filament_weight_g is not None
+                and float(b2b.filament_weight_g) > 0
+            ):
+                FilamentUsageLog.objects.create(
+                    filament=po.assigned_filament,
+                    custom_order=b2b,
+                    grams_used=float(b2b.filament_weight_g),
+                    notes=(
+                        f"Auto-deducted from ProductionOrder #{po.pk} "
+                        f"step '{step.name}'"
+                    ),
+                )
+        except Exception:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.exception(
+                "Failed to create FilamentUsageLog on step completion "
+                "step_id=%s",
+                step_id,
+            )
+
     return step
 
 

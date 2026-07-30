@@ -235,11 +235,11 @@ class ProductionStepInline(TabularInline):
 @admin.register(ProductionOrder)
 class ProductionOrderAdmin(OrganizationAdminMixin, ModelAdmin):
     list_display = ('__str__', 'status', 'quantity', 'quantity_completed',
-                    'assigned_printer', 'deadline', 'created_at')
+                    'assigned_printer', 'assigned_filament', 'deadline', 'created_at')
     list_filter = ('status', 'organization')
     search_fields = ('product__sku', 'product__name', 'qr_hash')
     autocomplete_fields = ('product', 'custom_order', 'ecommerce_order',
-                           'assigned_printer', 'assigned_operator')
+                           'assigned_printer', 'assigned_filament', 'assigned_operator')
     readonly_fields = ('qr_hash', 'created_at', 'updated_at')
     inlines = [ProductionStepInline]
     fieldsets = (
@@ -250,7 +250,7 @@ class ProductionOrderAdmin(OrganizationAdminMixin, ModelAdmin):
             'fields': ('order_item', 'custom_order', 'ecommerce_order')
         }),
         ('Assignment', {
-            'fields': ('assigned_printer', 'assigned_operator', 'deadline')
+            'fields': ('assigned_printer', 'assigned_filament', 'assigned_operator', 'deadline')
         }),
         ('Identifier', {
             'fields': ('qr_hash',),

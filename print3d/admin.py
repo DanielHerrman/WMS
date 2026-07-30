@@ -363,6 +363,29 @@ def export_estimation_to_txt(modeladmin, request, queryset):
 
 @admin.register(CustomOrder)
 class CustomOrderAdmin(OrganizationAdminMixin, ModelAdmin):
+    def save_model(self, request, obj, form, change):
+        """
+        Override save_model to guarantee _on_confirmed() runs even when
+        Unfold admin bypasses the model's save() override.
+
+        This is the gold-standard hook — Django admin ALWAYS calls this.
+        """
+        super().save_model(request, obj, form, change)
+
+        # Trigger ProductionOrder generation on confirmed transition
+        if obj.status == 'confirmed':
+            try:
+                obj._on_confirmed()
+            except Exception:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.exception(
+                    "Admin save_model: Failed to create ProductionOrder for "
+                    "CustomOrder #%s (%s)",
+                    obj.pk,
+                    obj.project_name,
+                )
+
     list_display = (
         'project_name', 'organization', 'status', 'printer', 'products_count',
         'display_base_cost', 'display_price_100', 'display_price_200',

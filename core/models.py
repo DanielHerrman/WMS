@@ -400,6 +400,14 @@ class ProductionOrder(models.Model):
         blank=True,
         related_name='assigned_orders'
     )
+    assigned_filament = models.ForeignKey(
+        'print3d.Filament',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='production_orders',
+        verbose_name="Assigned Filament"
+    )
     qr_hash = models.CharField(max_length=50, unique=True, default='PO-')
     deadline = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

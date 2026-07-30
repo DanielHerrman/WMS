@@ -23,6 +23,7 @@ class OrganizationAdminMixin:
         try:
             org = request.user.profile.organization
         except (AttributeError, UserProfile.DoesNotExist):
+            # Non-superuser without profile → no access
             return qs.none()
         return qs.filter(organization=org)
 

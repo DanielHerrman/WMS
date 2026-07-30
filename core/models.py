@@ -450,6 +450,68 @@ class ProductionStep(models.Model):
     )
     completed_at = models.DateTimeField(null=True, blank=True)
 
+    def save(self, *args, **kwargs):
+        # Track previous completion state
+        if self.pk:
+            try:
+                was_completed = ProductionStep.objects.only('is_completed').get(
+                    pk=self.pk
+                ).is_completed
+            except ProductionStep.DoesNotExist:
+                was_completed = False
+        else:
+            was_completed = False
+
+        super().save(*args, **kwargs)
+
+        # Auto-deduct filament when a "3D tisk" step is completed
+        if not was_completed and self.is_completed:
+            self._on_3d_print_completed()
+
+    def _on_3d_print_completed(self):
+        """
+        If this is the "3D tisk" step and the parent ProductionOrder has
+        an assigned_filament + linked CustomOrder with filament_weight_g,
+        create a FilamentUsageLog.
+
+        Resilient: never crashes on missing data.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        is_print_step = (
+            '3D' in self.name.upper() or self.step_number == 2
+        )
+        if not is_print_step:
+            return
+
+        try:
+            from print3d.models import FilamentUsageLog
+            po = self.production_order
+            b2b = po.custom_order
+
+            if (
+                po.assigned_filament
+                and b2b
+                and b2b.filament_weight_g is not None
+                and float(b2b.filament_weight_g) > 0
+            ):
+                FilamentUsageLog.objects.create(
+                    filament=po.assigned_filament,
+                    custom_order=b2b,
+                    grams_used=float(b2b.filament_weight_g),
+                    notes=(
+                        f"Auto-deducted from ProductionOrder #{po.pk} "
+                        f"step '{self.name}'"
+                    ),
+                )
+        except Exception:
+            logger.exception(
+                "Failed to create FilamentUsageLog on step completion "
+                "step_id=%s",
+                self.pk,
+            )
+
     def __str__(self):
         return f"PO #{self.production_order_id} Step #{self.step_number}: {self.name}"
 

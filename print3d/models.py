@@ -1,9 +1,12 @@
 import uuid
+import logging
 from datetime import date
 from decimal import Decimal
 
 from django.db import models
 from core.models import Organization
+
+logger = logging.getLogger(__name__)
 
 
 class Printer(models.Model):
@@ -543,7 +546,14 @@ class CustomOrder(models.Model):
 
         # Auto-create FilamentUsageLog + update filament when status transitions to 'printing'
         if old_status != 'printing' and self.status == 'printing':
-            self._on_printing()
+            try:
+                self._on_printing()
+            except Exception as e:
+                logger.error(
+                    f"Failed to create FilamentUsageLog for order #{self.pk} "
+                    f"({self.project_name}): {e}",
+                    exc_info=True,
+                )
 
     def _on_printing(self):
         """Handle status transition to 'printing':

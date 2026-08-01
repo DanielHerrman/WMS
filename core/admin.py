@@ -403,13 +403,15 @@ class UserAdmin(ModelAdmin):
     readonly_fields = ('last_login', 'date_joined')
 
     def save_model(self, request, obj, form, change):
-        is_new = not obj.pk
         super().save_model(request, obj, form, change)
-        # Auto-assign new users to the "Klient" group
-        if is_new:
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        # Auto-assign new users to the "Klient" group (after M2M save)
+        if not change:
             try:
                 client_group = Group.objects.get(name='Klient')
-                obj.groups.add(client_group)
+                form.instance.groups.add(client_group)
             except Group.DoesNotExist:
                 pass
 

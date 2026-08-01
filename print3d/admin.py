@@ -8,7 +8,7 @@ import math
 
 from core.admin import OrganizationAdminMixin
 from .models import (
-    Printer, MaterialType, FilamentBrand, Filament, CustomOrder, FilamentUsageLog
+    Printer, MaterialType, FilamentBrand, Filament, CustomOrder, PrintJob, FilamentUsageLog
 )
 
 
@@ -18,9 +18,22 @@ from .models import (
 
 @admin.register(Printer)
 class PrinterAdmin(OrganizationAdminMixin, ModelAdmin):
-    list_display = ('name', 'organization', 'amortization_rate_per_hour')
-    list_filter = ('organization',)
-    search_fields = ('name',)
+    list_display = ('name', 'organization', 'brand', 'status', 'ip_address', 'last_seen')
+    list_filter = ('status', 'brand', 'organization')
+    search_fields = ('name', 'ip_address', 'serial')
+    readonly_fields = ('last_seen',)
+    fieldsets = (
+        (None, {
+            'fields': ('organization', 'name', 'brand', 'amortization_rate_per_hour')
+        }),
+        ('Connection', {
+            'fields': ('serial', 'ip_address', 'access_code'),
+            'description': 'LAN komunikace s tiskárnou — vyplň pro MQTT bridge.'
+        }),
+        ('Status', {
+            'fields': ('status', 'last_seen'),
+        }),
+    )
 
 
 # ============================================================
@@ -545,6 +558,34 @@ class CustomOrderAdmin(OrganizationAdminMixin, ModelAdmin):
             )
         })
     )
+
+
+# ============================================================
+# PRINT JOB
+# ============================================================
+
+@admin.register(PrintJob)
+class PrintJobAdmin(ModelAdmin):
+    list_display = ('__str__', 'production_order', 'printer', 'status',
+                    'progress', 'priority', 'started_at', 'finished_at')
+    list_filter = ('status', 'printer')
+    search_fields = ('production_order__product__sku', 'production_order__qr_hash', 'notes')
+    readonly_fields = ('started_at', 'finished_at', 'filament_used_g', 'progress')
+    fieldsets = (
+        (None, {
+            'fields': ('production_order', 'printer', 'status', 'priority')
+        }),
+        ('Progress', {
+            'fields': ('progress', 'filament_used_g'),
+        }),
+        ('Timing', {
+            'fields': ('started_at', 'finished_at'),
+        }),
+        ('Notes', {
+            'fields': ('notes',),
+        }),
+    )
+    ordering = ('-priority', '-pk')
 
 
 # ============================================================

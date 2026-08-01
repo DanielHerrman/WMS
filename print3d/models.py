@@ -11,6 +11,20 @@ logger = logging.getLogger(__name__)
 
 class Printer(models.Model):
     """3D printer model."""
+    BRAND_CHOICES = [
+        ('bambu', 'Bambu Lab'),
+        ('prusa', 'Prusa'),
+        ('klipper', 'Klipper'),
+    ]
+    STATUS_CHOICES = [
+        ('idle', 'Idle'),
+        ('printing', 'Printing'),
+        ('paused', 'Paused'),
+        ('error', 'Error'),
+        ('maintenance', 'Maintenance'),
+        ('offline', 'Offline'),
+    ]
+
     organization = models.ForeignKey(
         Organization,
         on_delete=models.CASCADE,
@@ -24,6 +38,43 @@ class Printer(models.Model):
     amortization_rate_per_hour = models.FloatField(
         verbose_name="Machine Amortization (CZK/h)",
         default=25.0
+    )
+    brand = models.CharField(
+        max_length=20,
+        choices=BRAND_CHOICES,
+        default='bambu',
+        verbose_name="Printer Brand"
+    )
+    serial = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Serial Number",
+        help_text="Bambu serial (topic device/<serial>/...)"
+    )
+    ip_address = models.CharField(
+        max_length=45,
+        blank=True,
+        verbose_name="IP Address",
+        help_text="LAN IP pro komunikaci"
+    )
+    access_code = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Access Code",
+        help_text="Bambu access code / PrusaLink token"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='idle',
+        verbose_name="Status",
+        help_text="Aktuální stav (sladěno s MQTT)"
+    )
+    last_seen = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Last Seen",
+        help_text="Kdy tiskárna naposledy komunikovala"
     )
 
     def __str__(self):
@@ -687,6 +738,83 @@ class CustomOrder(models.Model):
     class Meta:
         verbose_name = "B2B order"
         verbose_name_plural = "B2B orders"
+
+
+class PrintJob(models.Model):
+    """Print job queued/sent to a printer via MQTT bridge."""
+    STATUS_CHOICES = [
+        ('queued', 'Queued'),
+        ('printing', 'Printing'),
+        ('paused', 'Paused'),
+        ('done', 'Done'),
+        ('failed', 'Failed'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    production_order = models.ForeignKey(
+        'core.ProductionOrder',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='print_jobs',
+        verbose_name="Production Order",
+        help_text="Co se tiskne"
+    )
+    printer = models.ForeignKey(
+        Printer,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='print_jobs',
+        verbose_name="Printer",
+        help_text="Na které tiskárně"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='queued',
+        verbose_name="Status"
+    )
+    priority = models.IntegerField(
+        default=0,
+        verbose_name="Priority",
+        help_text="Řazení fronty (vyšší = dřív)"
+    )
+    progress = models.IntegerField(
+        default=0,
+        verbose_name="Progress (%)",
+        help_text="0–100, z MQTT"
+    )
+    started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Started At"
+    )
+    finished_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Finished At"
+    )
+    filament_used_g = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Filament Used (g)",
+        help_text="Spotřeba z MQTT (jen telemetrie)"
+    )
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Notes"
+    )
+
+    def __str__(self):
+        return f"PrintJob #{self.pk} — {self.get_status_display()}"
+
+    class Meta:
+        verbose_name = "Print Job"
+        verbose_name_plural = "Print Jobs"
+        ordering = ['-priority', '-pk']
 
 
 class FilamentUsageLog(models.Model):

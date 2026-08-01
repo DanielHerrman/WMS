@@ -368,7 +368,7 @@ class UserProfileInline(StackedInline):
     verbose_name = "Organization Membership"
     verbose_name_plural = "Organization Membership"
     max_num = 1
-    min_num = 1
+    extra = 1
     fields = ('organization',)
 
 

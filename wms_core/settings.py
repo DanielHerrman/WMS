@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     'corsheaders',         # Pro budoucí mobilní appku
     'core',                # Tvá hlavní logika
     'print3d',             # 3D Printing Module
+    'dashboard',           # Client dashboards
 ]
 
 MIDDLEWARE = [
@@ -175,6 +176,11 @@ STORAGES = {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
+
+# Auth (dashboard)
+LOGIN_URL = '/dashboard/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/dashboard/login/'
 
 # WooCommerce integration credentials (global fallback — prefer EcommerceStore model)
 WOOCOMMERCE_URL = os.environ.get('WOOCOMMERCE_URL', '')

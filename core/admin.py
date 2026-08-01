@@ -3,6 +3,7 @@ from django.contrib.auth.models import Group, User
 from django.http import HttpResponse
 from django.urls import path
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from .models import (
@@ -287,8 +288,21 @@ class ProductionOrderAdmin(OrganizationAdminMixin, ModelAdmin):
     search_fields = ('product__sku', 'product__name', 'qr_hash')
     autocomplete_fields = ('product', 'custom_order', 'ecommerce_order',
                            'assigned_printer', 'assigned_filament', 'assigned_operator')
-    readonly_fields = ('qr_hash', 'created_at', 'updated_at')
+    readonly_fields = ('qr_hash', 'created_at', 'updated_at', 'finished_at')
     inlines = [ProductionStepInline]
+
+    def save_model(self, request, obj, form, change):
+        """Auto-manage finished_at: set on transition → done, clear on transition away from done."""
+        if change and obj.pk:
+            try:
+                old = ProductionOrder.objects.only('status').get(pk=obj.pk)
+                if old.status != 'done' and obj.status == 'done':
+                    obj.finished_at = timezone.now()
+                elif old.status == 'done' and obj.status != 'done':
+                    obj.finished_at = None
+            except ProductionOrder.DoesNotExist:
+                pass
+        super().save_model(request, obj, form, change)
 
     def get_fieldsets(self, request, obj=None):
         # Dynamicky zobraz jen relevantní source field podle typu objednávky
@@ -312,9 +326,9 @@ class ProductionOrderAdmin(OrganizationAdminMixin, ModelAdmin):
             ('Identifier', {
                 'fields': ('qr_hash',),
             }),
-            ('Timestamps', {
-                'fields': ('created_at', 'updated_at'),
-            }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at', 'finished_at'),
+        }),
         )
 
 

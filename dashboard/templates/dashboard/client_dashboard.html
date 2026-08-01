@@ -1,0 +1,191 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Dashboard — Lejbl Lab{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Page header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Přehled zakázek</h1>
+            <p class="text-sm text-gray-500 mt-1">
+                {% if selected_org %}
+                    Organizace: <strong>{{ selected_org.name }}</strong>
+                {% elif not is_admin_or_obchodak %}
+                    {{ request.user.profile.organization.name }}
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Organization filter (admin/obchodak only) -->
+        {% if is_admin_or_obchodak and all_orgs %}
+        <form method="get" class="flex items-center gap-2">
+            <label for="org-filter" class="text-sm text-gray-600 whitespace-nowrap">Organizace:</label>
+            <select name="org" id="org-filter"
+                onchange="this.form.submit()"
+                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500
+                       focus:border-brand-500 outline-none bg-white">
+                <option value="">Všechny</option>
+                {% for org in all_orgs %}
+                <option value="{{ org.pk }}" {% if selected_org and selected_org.pk == org.pk %}selected{% endif %}>
+                    {{ org.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Statistics cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        <!-- Aktivní zakázky -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5">
+            <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Aktivní zakázky</p>
+            <p class="text-2xl sm:text-3xl font-bold text-brand-700 mt-1">{{ active_orders_count }}</p>
+            <p class="text-xs text-gray-400 mt-1">Pending / Confirmed / In Production</p>
+        </div>
+
+        <!-- Vyrobené ks (měsíc) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5">
+            <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Vyrobeno ks</p>
+            <p class="text-2xl sm:text-3xl font-bold text-green-700 mt-1">{{ produced_this_month }}</p>
+            <p class="text-xs text-gray-400 mt-1">Tento měsíc (QC / Packed / Done)</p>
+        </div>
+
+        <!-- Ø doba výroby -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5">
+            <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Ø doba výroby</p>
+            <p class="text-2xl sm:text-3xl font-bold text-indigo-700 mt-1">
+                {% if avg_production_days is not None %}
+                    {{ avg_production_days|floatformat:1 }} d
+                {% else %}
+                    —
+                {% endif %}
+            </p>
+            <p class="text-xs text-gray-400 mt-1">Průměr (Done zakázky)</p>
+        </div>
+
+        <!-- Ø doba doručení -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5">
+            <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Ø doba doručení</p>
+            <p class="text-2xl sm:text-3xl font-bold text-gray-400 mt-1">
+                {% if avg_delivery_days is not None %}
+                    {{ avg_delivery_days|floatformat:1 }} d
+                {% else %}
+                    —
+                {% endif %}
+            </p>
+            <p class="text-xs text-gray-400 mt-1">Připravujeme</p>
+        </div>
+
+        <!-- Spotřeba materiálu -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5">
+            <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">Spotřeba materiálu</p>
+            <p class="text-2xl sm:text-3xl font-bold text-amber-700 mt-1">{{ display_grams }}</p>
+            <p class="text-xs text-gray-400 mt-1">Celkem (filament)</p>
+        </div>
+    </div>
+
+    <!-- Orders table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-4 sm:px-6 py-4 border-b border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-800">Seznam zakázek</h2>
+        </div>
+
+        {% if order_data %}
+        <!-- Desktop table -->
+        <div class="hidden md:block overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
+                    <tr>
+                        <th class="text-left px-6 py-3">Projekt</th>
+                        {% if is_admin_or_obchodak %}<th class="text-left px-6 py-3">Organizace</th>{% endif %}
+                        <th class="text-left px-6 py-3">Status</th>
+                        <th class="text-center px-6 py-3">Počet ks</th>
+                        <th class="text-left px-6 py-3">Progress</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for item in order_data %}
+                    <tr class="hover:bg-gray-50 transition-colors cursor-pointer"
+                        onclick="window.location='{% url 'manufacturing_detail' item.order.pk %}'">
+                        <td class="px-6 py-4">
+                            <span class="font-medium text-gray-800">{{ item.order.project_name }}</span>
+                            <p class="text-xs text-gray-400">{{ item.order.created_at|date:"d.m.Y" }}</p>
+                        </td>
+                        {% if is_admin_or_obchodak %}
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ item.order.organization.name }}</td>
+                        {% endif %}
+                        <td class="px-6 py-4">
+                            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold
+                                {% if item.order.status == 'pending' %}status-pending
+                                {% elif item.order.status == 'confirmed' %}status-confirmed
+                                {% elif item.order.status == 'printing' %}status-printing
+                                {% elif item.order.status == 'completed' %}status-completed
+                                {% elif item.order.status == 'cancelled' %}status-cancelled
+                                {% endif %}">
+                                {{ item.order.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center text-sm text-gray-600">{{ item.order.products_count }}</td>
+                        <td class="px-6 py-4 min-w-[150px]">
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                    <div class="progress-bar bg-brand-600 h-2 rounded-full"
+                                         style="width: {{ item.progress_pct }}%">
+                                    </div>
+                                </div>
+                                <span class="text-xs text-gray-500 w-10 text-right">{{ item.progress_pct }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile cards -->
+        <div class="md:hidden divide-y divide-gray-50">
+            {% for item in order_data %}
+            <a href="{% url 'manufacturing_detail' item.order.pk %}" class="block px-4 py-4 hover:bg-gray-50 transition-colors">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <p class="font-medium text-gray-800">{{ item.order.project_name }}</p>
+                        {% if is_admin_or_obchodak %}
+                        <p class="text-xs text-gray-400">{{ item.order.organization.name }}</p>
+                        {% endif %}
+                    </div>
+                    <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold
+                        {% if item.order.status == 'pending' %}status-pending
+                        {% elif item.order.status == 'confirmed' %}status-confirmed
+                        {% elif item.order.status == 'printing' %}status-printing
+                        {% elif item.order.status == 'completed' %}status-completed
+                        {% elif item.order.status == 'cancelled' %}status-cancelled
+                        {% endif %}">
+                        {{ item.order.get_status_display }}
+                    </span>
+                </div>
+                <div class="flex items-center gap-3 mt-2">
+                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-brand-600 h-2 rounded-full"
+                             style="width: {{ item.progress_pct }}%">
+                        </div>
+                    </div>
+                    <span class="text-xs text-gray-500">{{ item.progress_pct }}%</span>
+                </div>
+                <div class="flex justify-between mt-1 text-xs text-gray-400">
+                    <span>{{ item.order.products_count }} ks</span>
+                    <span>{{ item.order.created_at|date:"d.m.Y" }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="px-6 py-12 text-center text-gray-400">
+            <p class="text-lg mb-1">📋 Žádné zakázky</p>
+            <p class="text-sm">Zatím nejsou vytvořeny žádné B2B zakázky.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

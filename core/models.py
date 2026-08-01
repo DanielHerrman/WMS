@@ -199,6 +199,16 @@ class ProductComponent(models.Model):
 
 class EcommerceOrder(models.Model):
     """Importovaná objednávka z e-shopu (platform-agnostic)."""
+    WC_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('on-hold', 'On Hold'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+        ('refunded', 'Refunded'),
+        ('failed', 'Failed'),
+    ]
+
     store = models.ForeignKey(
         EcommerceStore,
         on_delete=models.CASCADE,
@@ -218,7 +228,7 @@ class EcommerceOrder(models.Model):
         related_name='ecommerce_orders'
     )
     platform_order_id = models.BigIntegerField(help_text="ID objednávky v externím systému")
-    status = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=100, blank=True, choices=WC_STATUS_CHOICES)
     # Billing
     billing_first_name = models.CharField(max_length=255, blank=True)
     billing_last_name = models.CharField(max_length=255, blank=True)
@@ -243,6 +253,8 @@ class EcommerceOrder(models.Model):
     currency = models.CharField(max_length=10, default='CZK')
     # Meta
     payment_method = models.CharField(max_length=255, blank=True)
+    is_paid = models.BooleanField(default=False, help_text="Order has been paid")
+    date_paid = models.DateTimeField(null=True, blank=True, help_text="When payment was received")
     notes = models.TextField(blank=True)
     raw_data = models.JSONField(
         default=dict, blank=True,

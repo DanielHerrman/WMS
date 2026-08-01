@@ -387,11 +387,15 @@ class CustomOrderAdmin(OrganizationAdminMixin, ModelAdmin):
                 )
 
     list_display = (
-        'project_name', 'organization', 'status', 'printer', 'products_count',
+        'project_name', 'organization', 'status', 'short_printer', 'products_count',
         'display_base_cost', 'display_price_100', 'display_price_200',
         'display_price_350', 'created_at'
     )
     list_filter = ('organization', 'status', 'printer', 'filament', 'delivery_type')
+
+    @admin.display(description="Printer", ordering='printer__name')
+    def short_printer(self, obj):
+        return obj.printer.name if obj.printer else "-"
     search_fields = ('project_name',)
     actions = [export_estimation_to_txt]
 

@@ -173,6 +173,8 @@ class EcommerceStoreAdmin(OrganizationAdminMixin, ModelAdmin):
 class OrderItemInline(TabularInline):
     model = OrderItem
     extra = 0
+    fields = ('ecommerce_item_id', 'product', 'product_name', 'sku',
+              'quantity', 'unit_price', 'subtotal')
     readonly_fields = ('ecommerce_item_id', 'product', 'product_name', 'sku',
                        'quantity', 'unit_price', 'subtotal')
     can_delete = False
@@ -248,7 +250,8 @@ class EcommerceOrderAdmin(OrganizationAdminMixin, ModelAdmin):
     def raw_data_download_link(self, obj):
         if not obj.pk:
             return "-"
-        url = f"{obj.pk}/download-raw/"
+        from django.urls import reverse
+        url = reverse('admin:core_ecommerceorder_download_raw', args=[obj.pk])
         return mark_safe(
             f'<a class="button" href="{url}" style="display:inline-flex;align-items:center;gap:4px;">'
             f'📥 Stáhnout RAW data (JSON)</a>'

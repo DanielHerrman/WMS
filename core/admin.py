@@ -1,4 +1,9 @@
 from django.contrib import admin
+from django.contrib.auth.models import User
+from django.http import HttpResponse
+from django.urls import path
+from django.shortcuts import get_object_or_404
+from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from .models import (
     Organization, UserProfile, Client, Product, ProductionDetails,
@@ -181,12 +186,12 @@ class OrderItemInline(TabularInline):
 
 @admin.register(EcommerceOrder)
 class EcommerceOrderAdmin(OrganizationAdminMixin, ModelAdmin):
-    list_display = ('__str__', 'organization', 'store', 'status',
+    list_display = ('__str__', 'organization', 'store', 'status', 'is_paid',
                     'billing_email', 'total', 'currency', 'imported_at')
-    list_filter = ('organization', 'store', 'status', 'currency', 'imported_at')
+    list_filter = ('organization', 'store', 'status', 'is_paid', 'currency', 'imported_at')
     search_fields = ('platform_order_id', 'billing_email', 'billing_first_name',
                      'billing_last_name', 'shipping_first_name', 'shipping_last_name')
-    readonly_fields = ('imported_at', 'raw_data')
+    readonly_fields = ('imported_at', 'date_paid', 'raw_data_download_link')
     inlines = [OrderItemInline]
     fieldsets = (
         (None, {
@@ -203,12 +208,51 @@ class EcommerceOrderAdmin(OrganizationAdminMixin, ModelAdmin):
                        'shipping_method')
         }),
         ('Finance', {
-            'fields': ('subtotal', 'shipping_total', 'total', 'currency', 'payment_method')
+            'fields': ('subtotal', 'shipping_total', 'total', 'currency', 'payment_method',
+                       'is_paid', 'date_paid')
         }),
-        ('Meta', {
-            'fields': ('notes', 'raw_data', 'imported_at')
+        ('Notes & Timestamps', {
+            'fields': ('notes', 'imported_at')
+        }),
+        ('RAW Data', {
+            'fields': ('raw_data_download_link', 'raw_data'),
+            'classes': ('collapse',),
+            'description': 'Kompletní JSON payload z e-shopu. Pro stažení klikněte na tlačítko výše.'
         }),
     )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                '<path:object_id>/download-raw/',
+                self.admin_site.admin_view(self.download_raw_view),
+                name='core_ecommerceorder_download_raw',
+            ),
+        ]
+        return custom_urls + urls
+
+    def download_raw_view(self, request, object_id):
+        import json
+        obj = get_object_or_404(EcommerceOrder, pk=object_id)
+        response = HttpResponse(
+            json.dumps(obj.raw_data, indent=2, ensure_ascii=False),
+            content_type='application/json; charset=utf-8',
+        )
+        response['Content-Disposition'] = (
+            f'attachment; filename="order_{obj.platform_order_id}_raw.json"'
+        )
+        return response
+
+    @admin.display(description="📥 RAW Data")
+    def raw_data_download_link(self, obj):
+        if not obj.pk:
+            return "-"
+        url = f"{obj.pk}/download-raw/"
+        return mark_safe(
+            f'<a class="button" href="{url}" style="display:inline-flex;align-items:center;gap:4px;">'
+            f'📥 Stáhnout RAW data (JSON)</a>'
+        )
 
     def has_add_permission(self, request):
         return False  # Orders are imported via webhook only
@@ -242,23 +286,33 @@ class ProductionOrderAdmin(OrganizationAdminMixin, ModelAdmin):
                            'assigned_printer', 'assigned_filament', 'assigned_operator')
     readonly_fields = ('qr_hash', 'created_at', 'updated_at')
     inlines = [ProductionStepInline]
-    fieldsets = (
-        (None, {
-            'fields': ('organization', 'product', 'quantity', 'quantity_completed', 'status')
-        }),
-        ('Source', {
-            'fields': ('order_item', 'custom_order', 'ecommerce_order')
-        }),
-        ('Assignment', {
-            'fields': ('assigned_printer', 'assigned_filament', 'assigned_operator', 'deadline')
-        }),
-        ('Identifier', {
-            'fields': ('qr_hash',),
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-        }),
-    )
+
+    def get_fieldsets(self, request, obj=None):
+        # Dynamicky zobraz jen relevantní source field podle typu objednávky
+        source_fields = ['order_item', 'custom_order', 'ecommerce_order']
+        if obj is not None:
+            if obj.custom_order_id:
+                source_fields = ['custom_order']
+            elif obj.ecommerce_order_id:
+                source_fields = ['ecommerce_order', 'order_item']
+
+        return (
+            (None, {
+                'fields': ('organization', 'product', 'quantity', 'quantity_completed', 'status')
+            }),
+            ('Source', {
+                'fields': tuple(source_fields)
+            }),
+            ('Assignment', {
+                'fields': ('assigned_printer', 'assigned_filament', 'assigned_operator', 'deadline')
+            }),
+            ('Identifier', {
+                'fields': ('qr_hash',),
+            }),
+            ('Timestamps', {
+                'fields': ('created_at', 'updated_at'),
+            }),
+        )
 
 
 # ============================================================
@@ -299,3 +353,69 @@ class ProductionStepAdmin(ModelAdmin):
     search_fields = ('name', 'production_order__product__sku', 'production_order__qr_hash')
     readonly_fields = ('completed_by', 'completed_at')
     ordering = ('production_order', 'step_number')
+
+
+# ============================================================
+# USER ADMIN (custom – with UserProfile inline)
+# ============================================================
+
+class UserProfileInline(StackedInline):
+    model = UserProfile
+    can_delete = False
+    verbose_name = "Organization Membership"
+    verbose_name_plural = "Organization Membership"
+    max_num = 1
+    min_num = 1
+    fields = ('organization',)
+
+
+# Unregister default User admin first
+if admin.site.is_registered(User):
+    admin.site.unregister(User)
+
+
+@admin.register(User)
+class UserAdmin(ModelAdmin):
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff',
+                    'is_active', 'date_joined', 'organization_name')
+    list_filter = ('is_staff', 'is_active', 'is_superuser', 'groups', 'profile__organization')
+    search_fields = ('username', 'email', 'first_name', 'last_name')
+    ordering = ('-date_joined',)
+    filter_horizontal = ('groups', 'user_permissions')
+    inlines = [UserProfileInline]
+    fieldsets = (
+        (None, {
+            'fields': ('username', 'password')
+        }),
+        ('Personal Info', {
+            'fields': ('first_name', 'last_name', 'email')
+        }),
+        ('Permissions', {
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')
+        }),
+        ('Important Dates', {
+            'fields': ('last_login', 'date_joined')
+        }),
+    )
+    readonly_fields = ('last_login', 'date_joined')
+
+    def save_model(self, request, obj, form, change):
+        is_new = not obj.pk
+        super().save_model(request, obj, form, change)
+        # Auto-assign new users to the "Klient" group
+        if is_new:
+            try:
+                client_group = Group.objects.get(name='Klient')
+                obj.groups.add(client_group)
+            except Group.DoesNotExist:
+                pass
+
+    @admin.display(description="Organization", ordering='profile__organization__name')
+    def organization_name(self, obj):
+        try:
+            return obj.profile.organization.name
+        except (AttributeError, UserProfile.DoesNotExist):
+            return "-"
+
+    def has_add_permission(self, request):
+        return True

@@ -417,6 +417,10 @@ class UserAdmin(ModelAdmin):
     readonly_fields = ('last_login', 'date_joined')
 
     def save_model(self, request, obj, form, change):
+        raw = form.cleaned_data.get('password', '')
+        # Hash jen nové raw heslo — existující hash (pbkdf2_sha256$…) nechat být
+        if raw and not raw.startswith('pbkdf2_sha256$'):
+            obj.set_password(raw)
         super().save_model(request, obj, form, change)
 
     def save_related(self, request, form, formsets, change):

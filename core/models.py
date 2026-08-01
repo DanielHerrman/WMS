@@ -422,6 +422,7 @@ class ProductionOrder(models.Model):
     )
     qr_hash = models.CharField(max_length=50, unique=True, default='PO-')
     deadline = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True, verbose_name="Finished At")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

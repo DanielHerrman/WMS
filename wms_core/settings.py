@@ -277,6 +277,11 @@ UNFOLD = {
                         "link": "/admin/print3d/printer/",
                     },
                     {
+                        "title": "Print Jobs",
+                        "icon": "print_connect",
+                        "link": "/admin/print3d/printjob/",
+                    },
+                    {
                         "title": "B2B Orders",
                         "icon": "business",
                         "link": "/admin/print3d/customorder/",

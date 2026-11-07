@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     'core',                # Tvá hlavní logika
     'print3d',             # 3D Printing Module
     'dashboard',           # Client dashboards
+    'todo',                # To-do list / plánování kroků WMS
 ]
 
 MIDDLEWARE = [
@@ -297,6 +298,17 @@ UNFOLD = {
                         "icon": "receipt_long",
                         "link": "/admin/print3d/filamentusagelog/",
                     },
+                ]
+            },
+            {
+                "title": "Plánování",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "To-do list",
+                        "icon": "task_alt",
+                        "link": "/admin/todo/todoitem/",
+                    }
                 ]
             }
         ]

@@ -9,10 +9,10 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ***REMOVED***
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-devpass}
       MYSQL_DATABASE: wms_db
       MYSQL_USER: wms_user
-      MYSQL_PASSWORD: ***REMOVED***
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-devpass}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -30,7 +30,7 @@ services:
       - DB_ENGINE=django.db.backends.mysql
       - DB_NAME=wms_db
       - DB_USER=wms_user
-      - DB_PASSWORD=***REMOVED***
+      - DB_PASSWORD=${DB_PASSWORD:-devpass}
       - DB_HOST=wms_db
       - DB_PORT=3306
       - DJANGO_ENV=development

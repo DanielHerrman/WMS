@@ -19,10 +19,10 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: ***REMOVED***
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_DATABASE: wms_db
           MYSQL_USER: wms_user
-          MYSQL_PASSWORD: ***REMOVED***
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
         ports:
           - 3306:3306
         options: >-
@@ -52,7 +52,7 @@ jobs:
           DB_ENGINE: django.db.backends.mysql
           DB_NAME: wms_db
           DB_USER: wms_user
-          DB_PASSWORD: ***REMOVED***
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
           DJANGO_ENV: development

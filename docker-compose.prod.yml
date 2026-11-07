@@ -12,7 +12,7 @@ services:
       - DB_ENGINE=django.db.backends.mysql
       - DB_NAME=wms_db
       - DB_USER=kimai_user
-      - DB_PASSWORD=***REMOVED***
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=172.17.0.1
       - DB_PORT=3306
       - DJANGO_ENV=production

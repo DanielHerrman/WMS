@@ -1,7 +1,7 @@
 # QA Test — B2B Orders + Print3d Regression (2026-07-30)
 
 **URL:** `https://app.lejbl-lab.space/admin/`  
-**Login:** `Dinoman95` / `***REMOVED***`  
+**Login:** `Dinoman95` / `<heslo z trezoru>`  
 
 ---
 

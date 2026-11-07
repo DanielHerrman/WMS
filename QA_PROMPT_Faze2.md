@@ -1,7 +1,7 @@
 # QA Prompt — Fáze 2: Výrobní logika (verifikace na produkci)
 
 **Aplikace:** Django + Unfold admin na https://app.lejbl-lab.space
-**Login:** Dinoman95 / ***REMOVED***
+**Login:** Dinoman95 / <heslo z trezoru>
 **Organizace:** Bracon
 
 ---

@@ -8,13 +8,13 @@
 | **IP (Tailscale)** | `100.65.97.17` |
 | **IP (LAN)** | nezjištěno – používáme Tailscale |
 | **Uživatel** | `Dinoman95` |
-| **Heslo** | `***REMOVED***` |
+| **Heslo** | `$WMS_SSH_PASSWORD` |
 | **Port SSH** | `22` |
 | **Příkaz** | `ssh Dinoman95@100.65.97.17` (nebo přes sshpass) |
 
 **sshpass pro automatizaci (Windows):**
 ```powershell
-sshpass -p "***REMOVED***" ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no Dinoman95@100.65.97.17
+ssh -i <SSH_KEY> -o ConnectTimeout=30 -o StrictHostKeyChecking=no Dinoman95@100.65.97.17
 ```
 sshpass je nainstalován v: `C:\Users\Danie\AppData\Local\Microsoft\WinGet\Packages\xhcoding.sshpass-win32_Microsoft.Winget.Source_8wekyb3d8bbwe\sshpass.exe`
 
@@ -23,7 +23,7 @@ sshpass je nainstalován v: `C:\Users\Danie\AppData\Local\Microsoft\WinGet\Packa
 |---------|---------|
 | **URL** | `https://app.lejbl-lab.space/admin/` |
 | **Superuser** | `Dinoman95` |
-| **Heslo** | `***REMOVED***` |
+| **Heslo** | `<ADMIN_PASSWORD>` |
 
 ### Databáze (PostgreSQL)
 | Položka | Hodnota |
@@ -32,8 +32,8 @@ sshpass je nainstalován v: `C:\Users\Danie\AppData\Local\Microsoft\WinGet\Packa
 | **Port** | `5432` |
 | **Database** | `wms_db` |
 | **User** | `wms_user` |
-| **Password** | `***REMOVED***` |
-| **DATABASE_URL** | `postgres://wms_user:***REMOVED***@lejbl_db_final:5432/wms_db` |
+| **Password** | `<DB_PASSWORD>` |
+| **DATABASE_URL** | `postgres://wms_user:<DB_PASSWORD>@lejbl_db_final:5432/wms_db` |
 
 ---
 
@@ -80,7 +80,7 @@ git push origin main
 
 ### 3. Připoj se na server
 ```powershell
-sshpass -p "***REMOVED***" ssh -o StrictHostKeyChecking=no Dinoman95@100.65.97.17
+ssh -i <SSH_KEY> -o StrictHostKeyChecking=no Dinoman95@100.65.97.17
 ```
 
 ### 4. Aktualizuj kód na serveru
@@ -94,34 +94,34 @@ git reset --hard origin/main
 ```bash
 # Kopíruj requirements.txt z lokálního repo (pokud se změnil)
 # Pak:
-echo ***REMOVED*** | sudo -S docker stop wms_backend
-echo ***REMOVED*** | sudo -S docker rm wms_backend
-echo ***REMOVED*** | sudo -S docker build -t lejbl_src-wms_app .
-echo ***REMOVED*** | sudo -S docker run -d --name wms_backend --network bridge -p 8002:8000 \
+echo $WMS_SSH_PASSWORD | sudo -S docker stop wms_backend
+echo $WMS_SSH_PASSWORD | sudo -S docker rm wms_backend
+echo $WMS_SSH_PASSWORD | sudo -S docker build -t lejbl_src-wms_app .
+echo $WMS_SSH_PASSWORD | sudo -S docker run -d --name wms_backend --network bridge -p 8002:8000 \
   -v /DATA/AppData/lejbl-wms/src/lejbl_src:/app \
-  -e DATABASE_URL=postgres://wms_user:***REMOVED***@lejbl_db_final:5432/wms_db \
+  -e DATABASE_URL=postgres://wms_user:<DB_PASSWORD>@lejbl_db_final:5432/wms_db \
   -e ALLOWED_HOSTS='app.lejbl-lab.space,localhost,127.0.0.1,100.65.97.17' \
   -e CSRF_TRUSTED_ORIGINS='https://app.lejbl-lab.space' \
   -e DJANGO_ENV=production \
   -e SECRET_KEY='django-insecure-2jqa0a_h-_-qnq_bu__ga_r_5pj69lka_6g7bycg9tpkpxyl_q' \
   --restart unless-stopped lejbl_src-wms_app
-echo ***REMOVED*** | sudo -S docker network connect lejbl_src_default wms_backend
+echo $WMS_SSH_PASSWORD | sudo -S docker network connect lejbl_src_default wms_backend
 ```
 > **Poznámka:** Aplikace nyní běží přes **Gunicorn** (production WSGI server) – CMD je definován v Dockerfilu. `collectstatic` se spouští automaticky při buildu image. Pokud přidáš nové statické soubory (CSS/JS), je potřeba rebuildnout image.
 
 ### 6. Rychlý restart (jen kód, beze změny image)
 ```bash
-echo ***REMOVED*** | sudo -S docker restart wms_backend
+echo $WMS_SSH_PASSWORD | sudo -S docker restart wms_backend
 ```
 
 ### 7. Migrace databáze
 ```bash
-echo ***REMOVED*** | sudo -S docker exec wms_backend python manage.py migrate
+echo $WMS_SSH_PASSWORD | sudo -S docker exec wms_backend python manage.py migrate
 ```
 
 ### 8. Vytvoření superusera (pokud je potřeba)
 ```bash
-echo ***REMOVED*** | sudo -S docker exec wms_backend python manage.py createsuperuser
+echo $WMS_SSH_PASSWORD | sudo -S docker exec wms_backend python manage.py createsuperuser
 ```
 
 ---
@@ -130,7 +130,7 @@ echo ***REMOVED*** | sudo -S docker exec wms_backend python manage.py createsupe
 
 Uživatel `Dinoman95` **nemá** přímý přístup k Docker socketu. Všechny Docker příkazy musí jít přes `sudo -S`:
 ```bash
-echo ***REMOVED*** | sudo -S docker ...
+echo $WMS_SSH_PASSWORD | sudo -S docker ...
 ```
 
 ---
@@ -139,8 +139,8 @@ echo ***REMOVED*** | sudo -S docker ...
 
 ### 502 Bad Gateway
 - Cloudflare Tunnel se nemůže připojit k `wms_backend`
-- Zkontroluj: `echo ***REMOVED*** | sudo -S docker ps | grep wms`
-- Restartuj Cloudflare Tunnel: `echo ***REMOVED*** | sudo -S docker restart cloudflare-tunnel`
+- Zkontroluj: `echo $WMS_SSH_PASSWORD | sudo -S docker ps | grep wms`
+- Restartuj Cloudflare Tunnel: `echo $WMS_SSH_PASSWORD | sudo -S docker restart cloudflare-tunnel`
 - Ověř, že wms_backend naslouchá: `curl -s -o /dev/null -w '%{http_code}' http://localhost:8002/admin/`
 
 ### Forbidden (403) – CSRF
@@ -155,9 +155,9 @@ echo ***REMOVED*** | sudo -S docker ...
 ### Migrační konflikty
 Pokud se migrační historie rozbije, vytvoř DB znovu:
 ```bash
-echo ***REMOVED*** | sudo -S docker exec lejbl_db_final psql -U wms_user -d postgres -c "DROP DATABASE IF EXISTS wms_db;"
-echo ***REMOVED*** | sudo -S docker exec lejbl_db_final psql -U wms_user -d postgres -c "CREATE DATABASE wms_db OWNER wms_user;"
-echo ***REMOVED*** | sudo -S docker exec wms_backend python manage.py migrate
+echo $WMS_SSH_PASSWORD | sudo -S docker exec lejbl_db_final psql -U wms_user -d postgres -c "DROP DATABASE IF EXISTS wms_db;"
+echo $WMS_SSH_PASSWORD | sudo -S docker exec lejbl_db_final psql -U wms_user -d postgres -c "CREATE DATABASE wms_db OWNER wms_user;"
+echo $WMS_SSH_PASSWORD | sudo -S docker exec wms_backend python manage.py migrate
 ```
 
 ---
